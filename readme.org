@@ -63,7 +63,11 @@ chmod u+x hermes.tcl
 
 Start the Hermes app using the command line via ~/path/to/hermes/hermes.tcl~.
 
-You could also add an alias to ~hermes.tcl~. 
+You could also add an alias to ~hermes.tcl~, e.g. via (in your ~.zshrc~):
+
+#+begin_src shell
+alias hermes="~/path/to/hermes/hermes.tcl"
+#+end_src
 
 
 * Footnotes
