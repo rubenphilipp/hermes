@@ -1,0 +1,72 @@
+# -*- eval: (flyspell-mode); eval: (ispell-change-dictionary "en") -*-
+#+CATEGORY: gp
+#+title: dear lover -- hermes
+#+author: Ruben Philipp
+#+date: 2025-02-23
+#+LANGUAGE: en
+#+startup: overview
+
+Hermes is a script written in tcl/tk that facilitates uploading letters of the
+/dear lover/ project[fn:1] to the web server.  A letter is, technically
+speaking, a directory containing a YAML-file containing the meta-data
+(i.e. ~letter.yaml~) as well as the actual media files (i.e. the video and
+optionally a poster image).  The directory name of each letter must be unique.
+
+By automatically consolidating the media files and generating the YAML-file,
+Hermes makes this upload process much easier.
+
+NB: As of now (2025-02-23), Hermes has just been tested on MacOS. 
+
+* Installation of Hermes
+
+** Requirements
+
+First, make sure that all required software is installed on the system. 
+
+*** tcl/tk
+
+Install /tcl\/tk/ via Homebrew[fn:2] using the following command:
+
+#+begin_src shell
+brew install tcl-tk
+#+end_src
+
+*** SSH keys
+
+In order to enable automatic upload, make sure to generate a ssh-key for the
+server.  This can be done via the ~ssh-keygen~ tool, e.g. via
+
+#+begin_src shell
+ssh-keygen -t rsa
+#+end_src
+
+*** rsync
+
+You need /rsync/ available both on the client (the user's machine) and the
+server. 
+
+** Installation
+
+- Move the ~hermes~ directory containing the ~hermes.tcl~ script to a proper
+  location.
+- Ensure that ~./hermes.tcl~ has the right permission properties via:
+  #+begin_src shell
+# in the hermes/ dir
+chmod u+x hermes.tcl
+  #+end_src
+- Move the ~example-config.tcl~ to the user home directory and rename it to
+  ~.hermesrc.tcl~ (e.g. ~/Users/rubenphilipp/.hermesrc.tcl~).
+- Change the configuration variables in the ~.hermesrc.tcl~ accordingly. 
+
+
+** Usage
+
+Start the Hermes app using the command line via ~/path/to/hermes/hermes.tcl~.
+
+You could also add an alias to ~hermes.tcl~. 
+
+
+* Footnotes
+[fn:2] http://brew.sh 
+
+[fn:1] https://dearlover.gottschalk-philipp.com/ 
