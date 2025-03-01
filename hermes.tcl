@@ -5,7 +5,7 @@
 ## Description:  Main file for the dear lover Hermes app
 ## Author:       Ruben Philipp
 ## Created:      2025-02-22
-## $$ Last modified:  23:11:59 Sun Feb 23 2025 CET
+## $$ Last modified:  20:56:06 Sat Mar  1 2025 CET
 ################################################################################
 
 package require Tk
@@ -267,19 +267,22 @@ proc processLetter {} {
 
         # wait until window creation...
         tkwait visibility .uploadWindow.main.infotext
-        
+
+        puts "UPLOADING via rsync. This might take a while..."
 
         ########################################
         ## UPLOAD...
-        set rsyncRes [catch {exec rsync -Pav -e "ssh -i $::hermes::sshkey" "$::hermes::outdir$newUuid" "$::hermes::sshuser@$hermes::sshserver:$::hermes::uploaddir"}]
+        set rsyncRes [catch { exec rsync -Pav -e "ssh -i $::hermes::sshkey" "$::hermes::outdir$newUuid" "$::hermes::sshuser@$hermes::sshserver:$::hermes::uploaddir" >@ stdout }]
         if { $rsyncRes == 0 } {
             set deletep [tk_messageBox -message "UPLOAD SUCCEEDED! Should I delete the generated letter directory from this computer?" -icon "info" -type "yesno"]
             if { $deletep == "yes" } {
                 # delete the letterdir
                 file delete -force "$letterdir"
             }
+            puts "DONE. The upload succeeded."
             tk_messageBox -message "Done. The letter has been uploaded to the server." -icon "info" -type "ok"
         } else {
+            puts "ERROR. The upload did not succeed. You can still manually upload the letter from $letterdir."
             tk_messageBox -message "ERROR! The upload did not succeed. You can still manually upload the letter from $letterdir." -icon "error" -type "ok"
         }
         # close upload progress window
