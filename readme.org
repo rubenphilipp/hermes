@@ -15,7 +15,12 @@ optionally a poster image).  The directory name of each letter must be unique.
 By automatically consolidating the media files and generating the YAML-file,
 Hermes makes this upload process much easier.
 
-NB: As of now (2025-02-23), Hermes has just been tested on MacOS. 
+NB: As of now (2025-02-23), Hermes has just been tested on MacOS.
+
+** dear lover
+
+The dear lover GitHub website project lives here:
+https://github.com/rubenphilipp/dear-lover/
 
 * Installation of Hermes
 
