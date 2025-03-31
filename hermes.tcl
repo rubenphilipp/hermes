@@ -5,7 +5,7 @@
 ## Description:  Main file for the dear lover Hermes app
 ## Author:       Ruben Philipp
 ## Created:      2025-02-22
-## $$ Last modified:  20:56:06 Sat Mar  1 2025 CET
+## $$ Last modified:  19:45:39 Mon Mar 31 2025 CEST
 ################################################################################
 
 package require Tk
@@ -99,6 +99,12 @@ grid [ttk::entry .main.datetime -width "$stdWidth" -textvariable ::hermes::datet
 grid [ttk::button .main.datetimenow -text "now" -command {set ::hermes::datetime [currentDate]; validateDateTimeWidget "$::hermes::datetime" .main.datetime}] -column 3 -row $row -sticky we
 
 bind .main.datetime <FocusOut> {validateDateTimeWidget "$::hermes::datetime" .main.datetime}
+
+incr row
+
+# Location
+grid [ttk::label .main.locationlabel -text "Location: "] -column 0 -row $row -sticky we
+grid [ttk::entry .main.location -textvariable ::hermes::location] -column 1 -row $row -sticky we
 
 incr row
 
@@ -234,6 +240,11 @@ proc processLetter {} {
     puts $yamlfile "file: [file tail $::hermes::vidfile]"
     if { "$hasPoster" == 1} {
         puts $yamlfile "poster: [file tail $::hermes::posterfile]"
+    }
+    ## add the location data to file if exists
+    ## RP  Mon Mar 31 19:44:42 2025
+    if { $::hermes::location != "" } {
+        puts $yamlfile "location: $::hermes::location"
     }
     puts $yamlfile "date: $::hermes::datetime"
     puts $yamlfile "from: $::hermes::from"
