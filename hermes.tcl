@@ -5,7 +5,7 @@
 ## Description:  Main file for the dear lover Hermes app
 ## Author:       Ruben Philipp
 ## Created:      2025-02-22
-## $$ Last modified:  19:45:39 Mon Mar 31 2025 CEST
+## $$ Last modified:  20:47:49 Sat Nov 15 2025 CET
 ################################################################################
 
 package require Tk
@@ -205,6 +205,29 @@ proc processLetter {} {
         # QUIT
         return 0;
     }
+
+    ####################
+    ## Test if file
+    ## size is >80MB
+    ####################
+
+    if { [file size "$::hermes::vidfile"] > 80000000 } {
+        puts "Warning: The file is larger than 80MB."
+        set doBigFile [ tk_messageBox \
+                            -title "Proceed with big file?" \
+                            -message "The video file is larger than 80MB. Do you want to proceed?" \
+                            -type yesno \
+                            -icon question ]
+        if { $doBigFile eq "yes" } {
+            puts "Proceeding with big file..."
+        } else {
+            puts "Transmission stopped."
+            return 0;
+        }
+    }
+
+    ####################
+    
     puts "All good! Continuing..."
 
     ####################
