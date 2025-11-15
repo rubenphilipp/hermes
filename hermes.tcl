@@ -5,7 +5,7 @@
 ## Description:  Main file for the dear lover Hermes app
 ## Author:       Ruben Philipp
 ## Created:      2025-02-22
-## $$ Last modified:  20:47:49 Sat Nov 15 2025 CET
+## $$ Last modified:  23:38:58 Sat Nov 15 2025 CET
 ################################################################################
 
 package require Tk
@@ -24,6 +24,7 @@ namespace eval hermes {
     set posterfile ""
     set outdir ""
     set comment ""
+    set location ""
     # a shell program (via exec) to generate a uuid
     set uuidcmd "uuidgen"
     # default letter-yaml filename
@@ -282,6 +283,9 @@ proc processLetter {} {
     close $yamlfile
     puts "Created letter file $::hermes::letterfile"
     # puts "DONE."
+
+    # puts "DEBUG: stop"
+    # return 0; # stop before uploading TODO debug
 
     ########################################
     ## UPLOAD (if ssh data is given)
