@@ -36,6 +36,17 @@ Install /tcl\/tk/ via Homebrew[fn:2] using the following command:
 brew install tcl-tk
 #+end_src
 
+*** ffmpeg
+
+=ffmpeg= is required to convert the video file to HLS files, which are used by
+the media player for variable resolution playback.
+
+On a Mac (with homebrew), use:
+
+#+begin_src shell
+brew install ffmpeg
+#+end_src
+
 *** SSH keys
 
 In order to enable automatic upload, make sure to generate a ssh-key for the
