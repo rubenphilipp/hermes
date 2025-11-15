@@ -12,3 +12,6 @@ set ::hermes::sshkey "~/.ssh/id_rsa"
 set ::hermes::sshserver "server.host.net"
 set ::hermes::sshuser "sshuser"
 set ::hermes::uploaddir "/home/sites/site100040628/web/dearlover/letters"
+
+## debugging mode (prevents uploading; 0/1)
+set ::hermes::debug 0
