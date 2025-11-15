@@ -5,7 +5,7 @@
 ## Description:  Main file for the dear lover Hermes app
 ## Author:       Ruben Philipp
 ## Created:      2025-02-22
-## $$ Last modified:  23:47:56 Sat Nov 15 2025 CET
+## $$ Last modified:  23:55:20 Sat Nov 15 2025 CET
 ################################################################################
 
 package require Tk
@@ -427,8 +427,8 @@ proc processLetter {} {
     puts "Created letter file $::hermes::letterfile"
     # puts "DONE."
 
-    puts "DEBUG: stop before upload"
-    return 0; # stop before uploading TODO debug
+    # puts "DEBUG: stop before upload"
+    # return 0; # stop before uploading TODO debug
 
     ########################################
     ## UPLOAD (if ssh data is given)
