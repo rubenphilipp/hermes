@@ -5,7 +5,7 @@
 ## Description:  Main file for the dear lover Hermes app
 ## Author:       Ruben Philipp
 ## Created:      2025-02-22
-## $$ Last modified:  23:38:58 Sat Nov 15 2025 CET
+## $$ Last modified:  23:47:56 Sat Nov 15 2025 CET
 ################################################################################
 
 package require Tk
@@ -173,6 +173,58 @@ proc selectDir {textvar} {
     set "::$textvar" "$res"
 }
 
+################################################################################
+## Creates a single HLS variant
+## - $level:    The name of the level (e.g., "720p")
+## - $width:    Target width (e.g., 1280)
+## - $height:   Target height (e.g., 720)
+## - $bitrate:  Target video bitrate (e.g., "2800k")
+## - $maxrate:  Max video bitrate (e.g., "2996k")
+## - $bufsize:  Buffer size (e.g., "4200k")
+##
+## Returns: The text line to be added to the master playlist
+################################################################################
+proc createHLSVariant {level width height bitrate maxrate bufsize} {
+    # Get variables from the main process
+    upvar ::hermes::vidfile vidfile
+    upvar ::hermes::letterdir letterdir
+
+    puts "Processing $level..."
+
+    # 1. Create the subdirectory for this level
+    set variantDir "$letterdir/stream/$level"
+    file mkdir "$variantDir"
+
+    # 2. Build the SIMPLE ffmpeg command
+    set FFMPEG_CMD [list ffmpeg -i "$vidfile"]
+    
+    # Video settings
+    lappend FFMPEG_CMD -c:v "libx264" -profile:v "main" -crf "20" -g "48" -keyint_min "48" -sc_threshold "0"
+    lappend FFMPEG_CMD -vf "scale=w=${width}:h=${height}:force_original_aspect_ratio=decrease,pad=w=${width}:h=${height}:x=(ow-iw)/2:y=(oh-ih)/2"
+    lappend FFMPEG_CMD -b:v "$bitrate" -maxrate "$maxrate" -bufsize "$bufsize"
+    
+    # Audio settings
+    lappend FFMPEG_CMD -c:a "aac" -b:a "128k" -ar "48000"
+    
+    # HLS output settings
+    lappend FFMPEG_CMD -f "hls" -hls_time "10" -hls_list_size "0"
+    lappend FFMPEG_CMD -hls_segment_filename "$variantDir/segment%03d.ts"
+    lappend FFMPEG_CMD -hls_playlist_type "vod"
+    lappend FFMPEG_CMD "$variantDir/index.m3u8"
+    
+    # 3. Execute the command
+    set convertRes [catch { exec {*}$FFMPEG_CMD >@ stdout 2>@1 } ffmpeg_output]
+    
+    if { $convertRes != 0 } {
+        # This will be caught by the main process
+        error "FFmpeg failed for $level:\n$ffmpeg_output"
+    }
+
+    # 4. Return the line for the master playlist
+    set bandwidth [string map {"k" "000"} $bitrate]
+    return "#EXT-X-STREAM-INF:BANDWIDTH=$bandwidth,RESOLUTION=${width}x${height}\n$level/index.m3u8"
+}
+
 ## This is the main function.
 proc processLetter {} {
     ## is data valid?
@@ -243,8 +295,97 @@ proc processLetter {} {
     set newUuid [exec "$::hermes::uuidcmd"]
     set letterdir "$::hermes::outdir$newUuid/"
     file mkdir "$letterdir"
-    puts "Created directory $letterdir" 
-    ## copy files
+    set ::hermes::letterdir $letterdir ;# Share with helper proc
+    puts "Created directory $letterdir"
+
+    ####################
+    ## Process Video (NEW HLS METHOD)
+    ####################
+
+    puts "Starting HLS conversion..."
+
+    # 1. Show a "processing" window
+    toplevel .convertWindow
+    wm title .convertWindow "Converting Video..."
+    grid [ttk::frame .convertWindow.main -padding "3 3 12 12"] -column 0 -row 0 -sticky nwes
+    grid columnconfigure .convertWindow 0 -weight 1; grid rowconfigure . 0 -weight 1
+    grid [ttk::progressbar .convertWindow.main.bar -mode indeterminate] -column 0 -row 1 -sticky we
+    .convertWindow.main.bar start
+    grid [ttk::label .convertWindow.main.infotext -text "Converting video to HLS, this will take a long time..."] -column 0 -row 2 -sticky we
+    tkwait visibility .convertWindow.main.infotext
+
+    # 2. Get source video dimensions with ffprobe
+    if {[catch {exec ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of default=nw=1:nk=1 "$::hermes::vidfile"} GEO]} {
+        puts "Error: ffprobe failed. Check if it's installed and in your PATH."
+        tk_messageBox -message "Error: ffprobe failed. Could not get video dimensions. Aborting conversion." -icon "error"
+        destroy .convertWindow
+        return 0
+    }
+    set SOURCE_WIDTH [lindex $GEO 0]
+    set SOURCE_HEIGHT [lindex $GEO 1]
+    puts "Source video dimensions detected: $SOURCE_WIDTH x $SOURCE_HEIGHT"
+
+    # 3. Create HLS output directory
+    set HLS_OUTPUT_DIR "$letterdir/stream"
+    file mkdir "$HLS_OUTPUT_DIR"
+    
+    set masterPlaylistLines [list]
+    set errorOccurred 0
+    set errorMsg ""
+    
+    # 4. Run the "smart" conversion, one command at a time
+    # We use 'catch' to ensure the window is always closed
+    if {[catch {
+        # --- 1080p ---
+        if { ($SOURCE_WIDTH > 1920) || ($SOURCE_HEIGHT > 1080) } {
+            lappend masterPlaylistLines [createHLSVariant "1080p" 1920 1080 "5000k" "5350k" "7500k"]
+        }
+        # --- 720p ---
+        if { ($SOURCE_WIDTH > 1280) || ($SOURCE_HEIGHT > 720) } {
+            lappend masterPlaylistLines [createHLSVariant "720p" 1280 720 "2800k" "2996k" "4200k"]
+        }
+        # --- 480p ---
+        if { ($SOURCE_WIDTH > 854) || ($SOURCE_HEIGHT > 480) } {
+            lappend masterPlaylistLines [createHLSVariant "480p" 854 480 "1400k" "1498k" "2100k"]
+        }
+        # --- 360p (Baseline) ---
+        # (Always add this *unless* the source is tiny and we already added others)
+        if { [llength $masterPlaylistLines] == 0 || ($SOURCE_WIDTH > 640) || ($SOURCE_HEIGHT > 360) } {
+             lappend masterPlaylistLines [createHLSVariant "360p" 640 360 "800k" "856k" "1200k"]
+        }
+        
+    } errorMsg]} {
+        set errorOccurred 1
+    }
+    
+    # 5. Close processing window
+    destroy .convertWindow
+    
+    # 6. Handle errors
+    if { $errorOccurred } {
+        puts "Error: FFmpeg conversion failed."
+        puts "--- FFMPEG OUTPUT ---"
+        puts $errorMsg
+        puts "---------------------"
+        tk_messageBox -message "ERROR! The FFmpeg conversion failed. Check the console for details. The letter was not processed." -icon "error"
+        file delete -force "$letterdir"
+        return 0
+    }
+    
+    # 7. Write the Master Playlist file
+    puts "Writing master playlist..."
+    set f [open "$HLS_OUTPUT_DIR/master.m3u8" w]
+    puts $f "#EXTM3U"
+    puts $f "#EXT-X-VERSION:3"
+    foreach line $masterPlaylistLines {
+        puts $f $line
+    }
+    close $f
+    
+    puts "FFmpeg conversion successful."
+    variable ::hermes::videofile_yaml "stream/master.m3u8"
+    
+    ## copy original files
     file copy "$::hermes::vidfile" "$letterdir[file tail $::hermes::vidfile]"
     puts "Copied video to $letterdir"
     ## copy poster if exists
@@ -261,7 +402,9 @@ proc processLetter {} {
     ####################
 
     set yamlfile [open "$letterdir$::hermes::letterfile" w]
-    puts $yamlfile "file: [file tail $::hermes::vidfile]"
+    # puts $yamlfile "file: [file tail $::hermes::vidfile]"
+    puts $yamlfile "file: $::hermes::videofile_yaml"
+    
     if { "$hasPoster" == 1} {
         puts $yamlfile "poster: [file tail $::hermes::posterfile]"
     }
@@ -284,8 +427,8 @@ proc processLetter {} {
     puts "Created letter file $::hermes::letterfile"
     # puts "DONE."
 
-    # puts "DEBUG: stop"
-    # return 0; # stop before uploading TODO debug
+    puts "DEBUG: stop before upload"
+    return 0; # stop before uploading TODO debug
 
     ########################################
     ## UPLOAD (if ssh data is given)
