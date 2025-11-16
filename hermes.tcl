@@ -5,7 +5,7 @@
 ## Description:  Main file for the dear lover Hermes app
 ## Author:       Ruben Philipp
 ## Created:      2025-02-22
-## $$ Last modified:  01:39:17 Sun Nov 16 2025 CET
+## $$ Last modified:  18:05:38 Sun Nov 16 2025 CET
 ################################################################################
 
 package require Tk
@@ -203,7 +203,7 @@ proc createHLSVariant {level width height bitrate maxrate bufsize} {
     
     # Video settings
     lappend FFMPEG_CMD -c:v "libx264" -profile:v "main" -crf "20" -g "48" -keyint_min "48" -sc_threshold "0"
-    lappend FFMPEG_CMD -vf "scale=w=${width}:h=${height}:force_original_aspect_ratio=decrease,pad=w=${width}:h=${height}:x=(ow-iw)/2:y=(oh-ih)/2"
+    lappend FFMPEG_CMD -vf "scale=w=${width}:h=${height}:force_original_aspect_ratio=decrease,scale=w=trunc(iw/2)*2:h=trunc(ih/2)*2"
     lappend FFMPEG_CMD -b:v "$bitrate" -maxrate "$maxrate" -bufsize "$bufsize"
     
     # Audio settings
@@ -225,7 +225,7 @@ proc createHLSVariant {level width height bitrate maxrate bufsize} {
 
     # 4. Return the line for the master playlist
     set bandwidth [string map {"k" "000"} $bitrate]
-    return "#EXT-X-STREAM-INF:BANDWIDTH=$bandwidth,RESOLUTION=${width}x${height}\n$level/index.m3u8"
+    return "#EXT-X-STREAM-INF:BANDWIDTH=$bandwidth\n$level/index.m3u8"
 }
 
 ## This is the main function.
@@ -464,7 +464,8 @@ proc processLetter {} {
 
         ########################################
         ## UPLOAD...
-        set rsyncRes [catch { exec rsync -Pav -e "ssh -i $::hermes::sshkey" "$::hermes::outdir$newUuid" "$::hermes::sshuser@$hermes::sshserver:$::hermes::uploaddir" >@ stdout }]
+        set rsyncRes [catch { exec rsync -Pav -e "ssh -i $::hermes::sshkey" "$::hermes::outdir$newUuid" "$::hermes::sshuser@$hermes::sshserver:$::hermes::uploaddir" >@ stdout 2>@1 } rsyncOutput]
+        ## set rsyncRes [catch { exec rsync -Pav -e "ssh -i $::hermes::sshkey" "$::hermes::outdir$newUuid" "$::hermes::sshuser@$hermes::sshserver:$::hermes::uploaddir" >@ stdout }]
         if { $rsyncRes == 0 } {
             set deletep [tk_messageBox -message "UPLOAD SUCCEEDED! Should I delete the generated letter directory from this computer?" -icon "info" -type "yesno"]
             if { $deletep == "yes" } {
@@ -474,7 +475,9 @@ proc processLetter {} {
             puts "DONE. The upload succeeded."
             tk_messageBox -message "Done. The letter has been uploaded to the server." -icon "info" -type "ok"
         } else {
-            puts "ERROR. The upload did not succeed. You can still manually upload the letter from $letterdir."
+            # puts "$::hermes::sshuser@$hermes::sshserver:$::hermes::uploaddir"
+            puts "ERROR. The upload did not succeed. You can still manually upload the letter from $letterdir.\n--- RSYNC FEHLER ---\n$rsyncOutput\n----------------------"
+            # puts "ERROR. The upload did not succeed. You can still manually upload the letter from $letterdir."
             tk_messageBox -message "ERROR! The upload did not succeed. You can still manually upload the letter from $letterdir." -icon "error" -type "ok"
         }
         # close upload progress window
