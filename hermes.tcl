@@ -5,7 +5,7 @@
 ## Description:  Main file for the dear lover Hermes app
 ## Author:       Ruben Philipp
 ## Created:      2025-02-22
-## $$ Last modified:  00:04:41 Sun Nov 16 2025 CET
+## $$ Last modified:  01:39:17 Sun Nov 16 2025 CET
 ################################################################################
 
 package require Tk
@@ -416,6 +416,8 @@ proc processLetter {} {
     if { $::hermes::location != "" } {
         puts $yamlfile "location: $::hermes::location"
     }
+    puts $yamlfile "width: $SOURCE_WIDTH"
+    puts $yamlfile "height: $SOURCE_HEIGHT"
     puts $yamlfile "date: $::hermes::datetime"
     puts $yamlfile "from: $::hermes::from"
     puts $yamlfile "to: $::hermes::to"
