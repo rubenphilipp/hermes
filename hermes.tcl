@@ -5,7 +5,7 @@
 ## Description:  Main file for the dear lover Hermes app
 ## Author:       Ruben Philipp
 ## Created:      2025-02-22
-## $$ Last modified:  18:05:38 Sun Nov 16 2025 CET
+## $$ Last modified:  20:06:28 Sun Nov 16 2025 CET
 ################################################################################
 
 package require Tk
@@ -187,7 +187,7 @@ proc selectDir {textvar} {
 ##
 ## Returns: The text line to be added to the master playlist
 ################################################################################
-proc createHLSVariant {level width height bitrate maxrate bufsize} {
+proc createHLSVariant {level width height bitrate maxrate bufsize source_w source_h} {
     # Get variables from the main process
     upvar ::hermes::vidfile vidfile
     upvar ::hermes::letterdir letterdir
@@ -224,8 +224,32 @@ proc createHLSVariant {level width height bitrate maxrate bufsize} {
     }
 
     # 4. Return the line for the master playlist
+
+    # --- Endgültige Auflösung berechnen ---
+    # (Dies repliziert die Logik des ffmpeg 'scale=...decrease' Filters)
+    if {$source_h == 0} { set source_h 1 }
+    if {$source_w == 0} { set source_w 1 }
+    
+    set source_ratio [expr {double($source_w) / $source_h}]
+    set target_ratio [expr {double($width) / $height}]
+    
+    if {$source_ratio > $target_ratio} {
+        # Quelle ist breiter als Ziel -> Breite ist der begrenzende Faktor
+        set final_w $width
+        set final_h [expr {round($width / $source_ratio)}]
+    } else {
+        # Quelle ist höher als Ziel -> Höhe ist der begrenzende Faktor
+        set final_h $height
+        set final_w [expr {round($height * $source_ratio)}]
+    }
+    
+    # Auf gerade Zahlen abrunden (genau wie im ffmpeg-Filter)
+    set final_w [expr {int($final_w / 2) * 2}]
+    set final_h [expr {int($final_h / 2) * 2}]
+    # --- ENDE ---
+    
     set bandwidth [string map {"k" "000"} $bitrate]
-    return "#EXT-X-STREAM-INF:BANDWIDTH=$bandwidth\n$level/index.m3u8"
+    return "#EXT-X-STREAM-INF:BANDWIDTH=$bandwidth,RESOLUTION=${final_w}x${final_h}\n$level/index.m3u8"
 }
 
 ## This is the main function.
@@ -341,20 +365,19 @@ proc processLetter {} {
     if {[catch {
         # --- 1080p ---
         if { ($SOURCE_WIDTH > 1920) || ($SOURCE_HEIGHT > 1080) } {
-            lappend masterPlaylistLines [createHLSVariant "1080p" 1920 1080 "5000k" "5350k" "7500k"]
+            lappend masterPlaylistLines [createHLSVariant "1080p" 1920 1080 "5000k" "5350k" "7500k" $SOURCE_WIDTH $SOURCE_HEIGHT]
         }
         # --- 720p ---
         if { ($SOURCE_WIDTH > 1280) || ($SOURCE_HEIGHT > 720) } {
-            lappend masterPlaylistLines [createHLSVariant "720p" 1280 720 "2800k" "2996k" "4200k"]
+            lappend masterPlaylistLines [createHLSVariant "720p" 1280 720 "2800k" "2996k" "4200k" $SOURCE_WIDTH $SOURCE_HEIGHT]
         }
         # --- 480p ---
         if { ($SOURCE_WIDTH > 854) || ($SOURCE_HEIGHT > 480) } {
-            lappend masterPlaylistLines [createHLSVariant "480p" 854 480 "1400k" "1498k" "2100k"]
+            lappend masterPlaylistLines [createHLSVariant "480p" 854 480 "1400k" "1498k" "2100k" $SOURCE_WIDTH $SOURCE_HEIGHT]
         }
         # --- 360p (Baseline) ---
-        # (Always add this *unless* the source is tiny and we already added others)
         if { [llength $masterPlaylistLines] == 0 || ($SOURCE_WIDTH > 640) || ($SOURCE_HEIGHT > 360) } {
-             lappend masterPlaylistLines [createHLSVariant "360p" 640 360 "800k" "856k" "1200k"]
+             lappend masterPlaylistLines [createHLSVariant "360p" 640 360 "800k" "856k" "1200k" $SOURCE_WIDTH $SOURCE_HEIGHT]
         }
         
     } errorMsg]} {
