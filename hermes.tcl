@@ -5,7 +5,7 @@
 ## Description:  Main file for the dear lover Hermes app
 ## Author:       Ruben Philipp
 ## Created:      2025-02-22
-## $$ Last modified:  20:06:28 Sun Nov 16 2025 CET
+## $$ Last modified:  21:02:05 Sun Nov 16 2025 CET
 ################################################################################
 
 package require Tk
@@ -363,21 +363,21 @@ proc processLetter {} {
     # 4. Run the "smart" conversion, one command at a time
     # We use 'catch' to ensure the window is always closed
     if {[catch {
-        # --- 1080p ---
-        if { ($SOURCE_WIDTH > 1920) || ($SOURCE_HEIGHT > 1080) } {
-            lappend masterPlaylistLines [createHLSVariant "1080p" 1920 1080 "5000k" "5350k" "7500k" $SOURCE_WIDTH $SOURCE_HEIGHT]
-        }
-        # --- 720p ---
-        if { ($SOURCE_WIDTH > 1280) || ($SOURCE_HEIGHT > 720) } {
-            lappend masterPlaylistLines [createHLSVariant "720p" 1280 720 "2800k" "2996k" "4200k" $SOURCE_WIDTH $SOURCE_HEIGHT]
+        # --- 360p (Baseline ZUERST) ---
+        if { [llength $masterPlaylistLines] == 0 || ($SOURCE_WIDTH > 640) || ($SOURCE_HEIGHT > 360) } {
+             lappend masterPlaylistLines [createHLSVariant "360p" 640 360 "800k" "856k" "1200k" $SOURCE_WIDTH $SOURCE_HEIGHT]
         }
         # --- 480p ---
         if { ($SOURCE_WIDTH > 854) || ($SOURCE_HEIGHT > 480) } {
             lappend masterPlaylistLines [createHLSVariant "480p" 854 480 "1400k" "1498k" "2100k" $SOURCE_WIDTH $SOURCE_HEIGHT]
         }
-        # --- 360p (Baseline) ---
-        if { [llength $masterPlaylistLines] == 0 || ($SOURCE_WIDTH > 640) || ($SOURCE_HEIGHT > 360) } {
-             lappend masterPlaylistLines [createHLSVariant "360p" 640 360 "800k" "856k" "1200k" $SOURCE_WIDTH $SOURCE_HEIGHT]
+        # --- 720p ---
+        if { ($SOURCE_WIDTH > 1280) || ($SOURCE_HEIGHT > 720) } {
+            lappend masterPlaylistLines [createHLSVariant "720p" 1280 720 "2800k" "2996k" "4200k" $SOURCE_WIDTH $SOURCE_HEIGHT]
+        }
+        # --- 1080p (ZULETZT) ---
+        if { ($SOURCE_WIDTH > 1920) || ($SOURCE_HEIGHT > 1080) } {
+            lappend masterPlaylistLines [createHLSVariant "1080p" 1920 1080 "5000k" "5350k" "7500k" $SOURCE_WIDTH $SOURCE_HEIGHT]
         }
         
     } errorMsg]} {
