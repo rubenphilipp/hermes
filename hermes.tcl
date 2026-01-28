@@ -5,7 +5,7 @@
 ## Description:  Main file for the dear lover Hermes app
 ## Author:       Ruben Philipp
 ## Created:      2025-02-22
-## $$ Last modified:  21:02:05 Sun Nov 16 2025 CET
+## $$ Last modified:  00:48:35 Thu Jan 29 2026 CET
 ################################################################################
 
 package require Tk
@@ -487,7 +487,7 @@ proc processLetter {} {
 
         ########################################
         ## UPLOAD...
-        set rsyncRes [catch { exec rsync -Pav -e "ssh -i $::hermes::sshkey" "$::hermes::outdir$newUuid" "$::hermes::sshuser@$hermes::sshserver:$::hermes::uploaddir" >@ stdout 2>@1 } rsyncOutput]
+        set rsyncRes [catch { exec rsync -Pav --chmod=D755,F644 -e "ssh -i $::hermes::sshkey" "$::hermes::outdir$newUuid" "$::hermes::sshuser@$hermes::sshserver:$::hermes::uploaddir" >@ stdout 2>@1 } rsyncOutput]
         ## set rsyncRes [catch { exec rsync -Pav -e "ssh -i $::hermes::sshkey" "$::hermes::outdir$newUuid" "$::hermes::sshuser@$hermes::sshserver:$::hermes::uploaddir" >@ stdout }]
         if { $rsyncRes == 0 } {
             set deletep [tk_messageBox -message "UPLOAD SUCCEEDED! Should I delete the generated letter directory from this computer?" -icon "info" -type "yesno"]
