@@ -6,6 +6,16 @@
 #+LANGUAGE: en
 #+startup: overview
 
+* This Repository Has Moved!
+
+This repository has been moved to Codeberg in February 2026. 
+
+You'll find it here: https://codeberg.org/rubenphilipp/hermes
+
+-----
+
+** Description
+
 Hermes is a script written in tcl/tk that facilitates uploading letters of the
 /dear lover/ project[fn:1] to the web server.  A letter is, technically
 speaking, a directory containing a YAML-file containing the meta-data
